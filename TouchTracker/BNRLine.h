@@ -12,5 +12,8 @@
 
 @property (nonatomic) CGPoint begin;
 @property (nonatomic) CGPoint end;
+@property (nonatomic, strong) UIColor *color;
+
+- (instancetype)initFrom:(CGPoint)begin to:(CGPoint)end color:(UIColor *)color;
 
 @end

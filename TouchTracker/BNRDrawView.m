@@ -17,6 +17,9 @@
 
 @property (nonatomic, weak) BNRLine *selectedLine;
 
+@property (strong, nonatomic) IBOutlet UIView *colorPickerView;
+@property (nonatomic, strong) UIColor *currentColor;
+
 @end
 
 @implementation BNRDrawView
@@ -30,32 +33,46 @@
         self.finishedLines = [[NSMutableArray alloc] init];
         self.backgroundColor = [UIColor grayColor];
         self.multipleTouchEnabled = YES;
-
-        UITapGestureRecognizer *doubleTapRecognizer =
-            [[UITapGestureRecognizer alloc] initWithTarget:self
-                                                    action:@selector(doubleTap:)];
-        doubleTapRecognizer.numberOfTapsRequired = 2;
-        doubleTapRecognizer.delaysTouchesBegan = YES;
-
-        [self addGestureRecognizer:doubleTapRecognizer];
-
-        UITapGestureRecognizer *tapRecognizer =
-            [[UITapGestureRecognizer alloc] initWithTarget:self
-                                                    action:@selector(tap:)];
-        tapRecognizer.delaysTouchesBegan = YES;
-        [tapRecognizer requireGestureRecognizerToFail:doubleTapRecognizer];
-        [self addGestureRecognizer:tapRecognizer];
-
-        UILongPressGestureRecognizer *pressRecognizer =
-            [[UILongPressGestureRecognizer alloc] initWithTarget:self
-                                                          action:@selector(longPress:)];
-        [self addGestureRecognizer:pressRecognizer];
-
-        self.moveRecognizer = [[UIPanGestureRecognizer alloc] initWithTarget:self
-                                                                      action:@selector(moveLine:)];
-        self.moveRecognizer.delegate = self;
-        self.moveRecognizer.cancelsTouchesInView = NO;
-        [self addGestureRecognizer:self.moveRecognizer];
+        
+        UISwipeGestureRecognizer *tripleSwipeRecognizer = [[UISwipeGestureRecognizer alloc] initWithTarget:self action:@selector(tripleSwipe:)];
+        tripleSwipeRecognizer.numberOfTouchesRequired = 3;
+        tripleSwipeRecognizer.direction = UISwipeGestureRecognizerDirectionUp;
+        
+        [self addGestureRecognizer:tripleSwipeRecognizer];
+//
+//        UITapGestureRecognizer *doubleTapRecognizer =
+//            [[UITapGestureRecognizer alloc] initWithTarget:self
+//                                                    action:@selector(doubleTap:)];
+//        doubleTapRecognizer.numberOfTapsRequired = 2;
+//        doubleTapRecognizer.delaysTouchesBegan = YES;
+//
+//        [self addGestureRecognizer:doubleTapRecognizer];
+//
+//        UITapGestureRecognizer *tapRecognizer =
+//            [[UITapGestureRecognizer alloc] initWithTarget:self
+//                                                    action:@selector(tap:)];
+//        tapRecognizer.delaysTouchesBegan = YES;
+//        [tapRecognizer requireGestureRecognizerToFail:doubleTapRecognizer];
+//        [self addGestureRecognizer:tapRecognizer];
+//
+//        UILongPressGestureRecognizer *pressRecognizer =
+//            [[UILongPressGestureRecognizer alloc] initWithTarget:self
+//                                                          action:@selector(longPress:)];
+//        [self addGestureRecognizer:pressRecognizer];
+//
+//        self.moveRecognizer = [[UIPanGestureRecognizer alloc] initWithTarget:self
+//                                                                      action:@selector(moveLine:)];
+//        self.moveRecognizer.delegate = self;
+//        self.moveRecognizer.cancelsTouchesInView = NO;
+//        [self addGestureRecognizer:self.moveRecognizer];
+//        
+        self.currentColor = [UIColor blackColor];
+        
+        CGRect frame = CGRectMake(0,0,self.window.frame.size.height, self.window.frame.size.width);
+        
+        self.colorPickerView = [[[NSBundle mainBundle] loadNibNamed:@"BNRColorSelectView" owner:self options:nil] firstObject];
+        self.colorPickerView.frame = frame;
+        
     }
 
     return self;
@@ -120,8 +137,8 @@
 - (void)drawRect:(CGRect)rect
 {
     // Draw finished lines in black
-    [[UIColor blackColor] set];
     for (BNRLine *line in self.finishedLines) {
+        [line.color set];
         [self strokeLine:line];
     }
 
@@ -223,6 +240,20 @@
     [self setNeedsDisplay];
 }
 
+- (void)tripleSwipe:(UISwipeGestureRecognizer *)gr
+{
+    NSLog(@"Recognized Triple Swipe Up");
+    [self addSubview:self.colorPickerView];
+    [self setNeedsDisplay];
+}
+
+- (IBAction)changeColor:(UIButton *)sender {
+    NSLog(@"Button tapped!");
+    self.currentColor = sender.backgroundColor;
+    [self.colorPickerView removeFromSuperview];
+}
+
+
 - (void)touchesBegan:(NSSet *)touches
            withEvent:(UIEvent *)event
 {
@@ -268,6 +299,7 @@
     for (UITouch *t in touches) {
         NSValue *key = [NSValue valueWithNonretainedObject:t];
         BNRLine *line = self.linesInProgress[key];
+        line.color = self.currentColor;
 
         [self.finishedLines addObject:line];
         [self.linesInProgress removeObjectForKey:key];
